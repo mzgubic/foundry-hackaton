@@ -136,7 +136,10 @@ def get_encoder(trj, data, verbose=False):
             encoder[key] = state_code
             state_code +=1
     
-    return encoder
+    # make the decoder
+    decoder = {encoder[key]:key for key in encoder}
+
+    return encoder, decoder
 
 
 def encode_trajectory(trj, encoder, verbose=False):
@@ -174,8 +177,8 @@ def career_trajectories(N=None, datapath='data/HiringPatterns.csv', verbose=Fals
 
         # yield encoder first
         if i==0:
-            encoder = get_encoder(trj, data, verbose)
-            yield encoder
+            encoder, decoder = get_encoder(trj, data, verbose)
+            yield encoder, decoder
             
         # encode as a trajectory
         trj = encode_trajectory(trj, encoder, verbose)
@@ -188,7 +191,7 @@ def main():
 
 	gen = career_trajectories(10, '../data/HiringPatterns.csv', verbose=True)
 
-	encoder = next(gen)
+	encoder, decoder = next(gen)
 	for trj in gen:
 	    print(trj)
 
