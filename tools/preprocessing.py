@@ -26,6 +26,11 @@ def clean(data, verbose=False):
     
     # drop the first line
     data.drop(0, axis=0, inplace=True)
+
+    # remove duplicate values
+    froms = ['NO', 'no', 'yes', np.nan, ' N/A', '   N/A', 'Female ']
+    tos =   ['No', 'No', 'Yes', 'N/A',    'N/A',   'N/A', 'Female']
+    data.replace(froms, tos, inplace=True)
     
     return data
 
@@ -131,7 +136,10 @@ def get_encoder(trj, data, verbose=False):
             encoder[key] = state_code
             state_code +=1
     
-    return encoder
+    # make the decoder
+    decoder = {encoder[key]:key for key in encoder}
+
+    return encoder, decoder
 
 
 def encode_trajectory(trj, encoder, verbose=False):
@@ -169,8 +177,8 @@ def career_trajectories(N=None, datapath='data/HiringPatterns.csv', verbose=Fals
 
         # yield encoder first
         if i==0:
-            encoder = get_encoder(trj, data, verbose)
-            yield encoder
+            encoder, decoder = get_encoder(trj, data, verbose)
+            yield encoder, decoder
             
         # encode as a trajectory
         trj = encode_trajectory(trj, encoder, verbose)
@@ -181,11 +189,14 @@ def career_trajectories(N=None, datapath='data/HiringPatterns.csv', verbose=Fals
 
 def main():
 
-	gen = career_trajectories(10, '../data/HiringPatterns.csv', verbose=True)
+    pass
+    gen = career_trajectories(10, '../data/HiringPatterns.csv', verbose=True)
+    encoder, decoder = next(gen)
 
-	encoder = next(gen)
-	for trj in gen:
-	    print(trj)
+    for trj in gen:
+        print(trj)
+        for i in trj:
+            print(i, decoder[i])
 
 if __name__ == '__main__':
 	main()
