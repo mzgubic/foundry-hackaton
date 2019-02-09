@@ -1,5 +1,7 @@
 bin/*
 lib/*
+data/*
+share/*
 pip-selfcheck.json
 pyvenv.cfg
 *.pdf
