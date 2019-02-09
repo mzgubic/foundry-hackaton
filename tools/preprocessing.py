@@ -189,11 +189,14 @@ def career_trajectories(N=None, datapath='data/HiringPatterns.csv', verbose=Fals
 
 def main():
 
-	gen = career_trajectories(10, '../data/HiringPatterns.csv', verbose=True)
+    pass
+    gen = career_trajectories(10, '../data/HiringPatterns.csv', verbose=True)
+    encoder, decoder = next(gen)
 
-	encoder, decoder = next(gen)
-	for trj in gen:
-	    print(trj)
+    for trj in gen:
+        print(trj)
+        for i in trj:
+            print(i, decoder[i])
 
 if __name__ == '__main__':
 	main()
