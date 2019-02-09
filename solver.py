@@ -1,16 +1,18 @@
 import os
 import time
-import json
+import pickle
 import copy
 import numpy as np
 from scipy.stats import norm
 import random
 from random import shuffle
+import tqdm
 
 import torch
 import torch.nn as nn
 
 import argparse
+from tools import preprocessing
 
 use_cuda=torch.cuda.is_available()
 
@@ -37,9 +39,20 @@ class SuperAwesomeNeuralNetwork(nn.Module):
           return output, hidden
 
 def main():
-    all_data = json.load(open("data.json","r"))
-    data=all_data["paths"]
-    input_dim = 10
+    print("Get the data")
+    n_data=100000
+    checkpoint_name = "data_checkpoint_"+str(n_data)+".pickle"
+    if os.path.isfile(checkpoint_name):
+        all_data = pickle.load(open(checkpoint_name,'rb'))
+    else:
+        all_data = [a for a in tqdm.tqdm(preprocessing.career_trajectories(n_data, 'data/HiringPatterns.csv'),total=n_data)]
+        pickle.dump(all_data,open(checkpoint_name,'wb'))
+    name2id = all_data[0]
+    id2name={}
+    for key,value in name2id.items():
+        id2name[value]=key
+    data=[arr.astype(int).tolist() for arr in all_data[1:]]
+    input_dim = 15
     n_embeddings = max(max(path) for path in data)+1
     batch_size = 32
     model = SuperAwesomeNeuralNetwork(input_dim,n_embeddings)
@@ -47,9 +60,10 @@ def main():
         model.cuda()
     learning_rate = 1e-4
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate)
-    n_epochs = 7
+    n_epochs = 5
     print("Training")
     for epoch in range(n_epochs):
+        print("Epoch ",epoch+1)
         random.shuffle(data)
         for i in range(0,len(data),batch_size):
             batch = data[i:i+batch_size]
@@ -77,7 +91,8 @@ def main():
             torch.nn.utils.clip_grad_norm_(model.parameters(),5.0)
             optimizer.step()
             if (i//batch_size)%20==0:
-                print("Loss: {}".format(loss.data.item()))
+                print("Step {}/{}\tLoss: {}".format(i,len(data),loss.data.item()))
+        torch.save(model.state_dict(),"trained_model")
     print("Getting statistics for each institution")
     institutions={}
     for i in range(0,len(data),batch_size):
@@ -111,9 +126,9 @@ def main():
         events=events.cuda()
     outputs, last_hidden = model(events,input_lengths)
     for j in range(10):
-        print("\nPath {} starts in {}".format(j+1,events[0][j]))
+        print("\nPath {} starts in {}".format(j+1,id2name[events[0][j].cpu().data.item()]))
         for k in range(1,input_lengths[j]):
             matching=torch.dot(model.embedding(events[k][j]).view(-1),outputs[k-1][j].view(-1))
-            print("Node {}, matching {}, node's distribution {}, probability: {}".format(events[k][j],matching.data.item(),inst_gauss[events[k][j].data.item()],norm.cdf((matching.data.item()-inst_gauss[events[k][j].data.item()][0])/inst_gauss[events[k][j].data.item()][1])))
+            print("Node {}, matching {}, node's distribution {}, probability: {}".format(id2name[events[k][j].cpu().data.item()],matching.data.item(),inst_gauss[events[k][j].data.item()],norm.cdf((matching.data.item()-inst_gauss[events[k][j].data.item()][0])/inst_gauss[events[k][j].data.item()][1])))
 
 main()
