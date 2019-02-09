@@ -26,6 +26,11 @@ def clean(data, verbose=False):
     
     # drop the first line
     data.drop(0, axis=0, inplace=True)
+
+    # remove duplicate values
+    froms = ['NO', 'no', 'yes', np.nan, ' N/A', '   N/A', 'Female ']
+    tos =   ['No', 'No', 'Yes', 'N/A',    'N/A',   'N/A', 'Female']
+    data.replace(froms, tos, inplace=True)
     
     return data
 
